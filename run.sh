@@ -66,8 +66,14 @@ initialize_database() {
 	if mysql -u"$DB_USER" -p"$DB_PASS" -e "quit" 2>/dev/null; then
         echo "Successfully connected to MySQL"
     else
-        echo "Setup MCE user"
-		sudo mysql -e "SET PASSWORD FOR $MCE_DB_USER@'localhost' = PASSWORD($MCE_DB_PASS); FLUSH PRIVILEGES;"
+		sudo mysql -u"root" -e "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '$MCE_DB_USER');" | grep 1
+        if [ $? -eq 0 ]; then
+			echo "User $MCE_DB_USER already exists."
+		else
+			sudo mysql -u"root" "$MYSQL_ROOT_USER" -e "CREATE USER '$MCE_DB_USER'@'localhost' IDENTIFIED BY '$MCE_DB_PASS';"
+			echo "User $MCE_DB_USER created."
+			sudo mysql -u"root" -e "SET PASSWORD FOR $MCE_DB_USER@'localhost' = PASSWORD($MCE_DB_PASS); FLUSH PRIVILEGES;"
+		fi
     fi
 }
 
